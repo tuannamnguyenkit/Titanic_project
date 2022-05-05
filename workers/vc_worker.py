@@ -31,7 +31,6 @@ import yaml
 def extract_logmel(audio, mean, std, adc=None, sr=16000):
     # wav, fs = librosa.load(wav_path, sr=sr)
 
-
     transform = torchaudio.transforms.Resample(22050, 16000)
     wav = transform(audio)
     wav = wav.numpy()
@@ -101,11 +100,12 @@ class VC_worker:
         self.mean = mel_stats[0]
         self.std = mel_stats[1]
         self.vocoder_checkpoint = args.vocoder_checkpoint
+        self.outdir = args.outdir
         dirname = os.path.dirname(self.vocoder_checkpoint)
         config_path = os.path.join(dirname, "config.yml")
         with open(config_path) as f:
             config = yaml.load(f, Loader=yaml.Loader)
-        args = {'checkpoint': self.vocoder_checkpoint}
+        args = {'checkpoint': self.vocoder_checkpoint, 'outdir': self.outdir}
         config.update(args)
         print(f"Loaded model parameters from {self.vocoder_checkpoint}.")
 
@@ -136,7 +136,6 @@ class VC_worker:
             src_mel, src_lf0 = extract_logmel(audio, self.mean, self.std)
             src_mel = torch.FloatTensor(src_mel.T).unsqueeze(0).to(self.device)
             src_lf0 = torch.FloatTensor(src_lf0).unsqueeze(0).to(self.device)
-
 
         with torch.no_grad():
             z, _, _, _ = self.encoder.encode(src_mel)

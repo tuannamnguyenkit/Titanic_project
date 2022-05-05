@@ -21,6 +21,7 @@ def get_smoothened_boxes(boxes, T):
         boxes[i] = np.mean(window, axis=0)
     return boxes
 
+
 def load_model(path, device):
     model = Wav2Lip()
     print("Load checkpoint from: {}".format(path))
@@ -33,6 +34,7 @@ def load_model(path, device):
 
     model = model.to(device)
     return model.eval()
+
 
 # def _load(checkpoint_path):
 #     if device == 'cuda':
@@ -265,7 +267,9 @@ class VC_worker:
         full_frames = facebox.full_frames
 
         mel = audio.melspectrogram(wav)
-
+        if mel.shape[1] < self.mel_step_size: mel = np.concatenate(
+            [mel, np.zeros((80, self.mel_step_size - mel.shape[1]))],
+            axis=1)
         if np.isnan(mel.reshape(-1)).sum() > 0:
             raise ValueError(
                 'Mel contains nan! Using a TTS voice? Add a small epsilon noise to the wav file and try again')
@@ -350,5 +354,5 @@ class VC_worker:
         end_of_the_lip_part = time.time()
         print_time = end_of_the_lip_part - start_of_the_lip_part
         print("Total full part of the lip generation: {}".format(print_time))
-      #  return_text = "RES: " + write_name_video_file.split(".avi")[0] + ".mp4\n"
+        #  return_text = "RES: " + write_name_video_file.split(".avi")[0] + ".mp4\n"
         return mp4_file

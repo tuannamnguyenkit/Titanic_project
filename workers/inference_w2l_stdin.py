@@ -353,6 +353,8 @@ def main():
 
         mel = audio.melspectrogram(wav)
         # print(mel.shape)
+        if mel.shape[1] < mel_step_size: mel = np.concatenate([mel, np.zeros((80, mel_step_size - mel   .shape[1]))],
+                                                              axis=1)
 
         if np.isnan(mel.reshape(-1)).sum() > 0:
             raise ValueError(

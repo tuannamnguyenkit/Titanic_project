@@ -223,6 +223,7 @@ if __name__ == "__main__":
     # parser.add_argument("--info_path", "-i", type=str, required=True)
     parser.add_argument('--converted_wav_path', type=str, required=True)
     parser.add_argument('--model_path', '-m', type=str, required=True)
+
     args = parser.parse_args()
     print(args.converted_wav_path)
     convert(args)
