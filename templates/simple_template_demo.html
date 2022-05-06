@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Titanic Expedition</title>
+    <link rel="shortcut icon" href="/wavs/favicon.ico">
+
+    .
+    <style>
+        .content {
+            padding: 0 18px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            background-color: #f1f1f1;
+        }
+    </style>
+
+</head>
+
+<body>
+
+
+<div class="w-100 p-3 ml-3">
+    <!--<a href="/">Home</a>-->
+
+    <div id="content" class="jumbotron">
+        <h1 class="display-4">Titanic Expedition</h1>
+        <p class="lead">Submarine Communication Interface</p>
+
+        <hr class="my-4">
+        <div class="row">
+            <div class="col">
+                <form id="input_form" name="input_form"> <!--method="POST" action="/demo">-->
+                    <div class="form-group" id="form-group-speaker">
+                        <label for="speaker">Speaker 1</label>
+                        <select name="input_name" id="speaker" class="form-control">
+                            <option value="AlexWaibel" selected {{
+                            'selected' if model_choice == 'AlexWaibel' }} >Alex Waibel</option>
+                            <option value="Stockton" {{
+                            'selected' if model_choice == 'Stockton' }} >Stockton Rush</option>
+                            <!--option value="Hanselka" {{
+                            'selected' if model_choice == 'Hanselka' }} >President Hanselka</option-->
+                            
+                        </select>
+                    </div>
+                    <div class="form-group" id="form-group-video" ><!--style="visibility: hidden;"-->
+                        <label for="speaker-video">Select Video</label>
+                        <select name="input_video" id="speaker-video" class="form-control">
+                            <option value="AlexWaibel_1">Alex Waibel 1</option>
+                            <option value="AlexWaibel_2">Alex Waibel 2</option>
+                            <option value="AlexWaibel_3">Alex Waibel submarine video</option>
+                            <option value="AlexWaibel_4">Alex Waibel submarine new video 1</option>
+                            <option value="AlexWaibel_5">Alex Waibel submarine new video 2</option>                            
+                        </select>
+                    </div>
+                    
+                </form>
+
+                <div class="media">
+                    <div class="media-body pull-left">
+                        <p class="lead">Video output</p>
+                        <video id="video" width="480" height="640" controls autoplay preload="none">
+                            <source src="/{{video}}" type="video/mp4">     
+                            Your browser does not support the video tag.
+                        </video>        
+                    </div>
+                </div>
+
+                <form id="output_form" name="output_form">
+                    <div class="form-group">
+                        <label for="text_area" >Transcript</label>
+                        <textarea readonly class="form-control" id="text_area" name="input_text" placeholder="{{sample_text}}"
+                                  cols="40" rows="4">
+                        </textarea>
+                    </div>
+
+                </form>
+            </div>
+            <div class="col">
+                <form id="input_form2" name="input_form2"> <!--method="POST" action="/demo">-->
+                    <div class="form-group" id="form-group-speaker2">
+                        <label for="speaker2">Speaker 2</label>
+                        <select name="input_name2" id="speaker2" class="form-control">
+                            <option value="AlexWaibel" {{
+                            'selected' if model_choice == 'AlexWaibel' }} >Alex Waibel</option>
+                            <option value="Stockton" selected {{
+                            'selected' if model_choice == 'Stockton' }} >Stockton Rush</option>
+                            <!--option value="Hanselka" {{
+                            'selected' if model_choice == 'Hanselka' }} >President Hanselka</option-->
+                            
+                        </select>
+                    </div>
+                    <div class="form-group" id="form-group-video2" ><!--style="visibility: hidden;"-->
+                        <label for="speaker-video2">Select Video</label>
+                        <select name="input_video2" id="speaker-video2" class="form-control">
+                            <option value="Stockton">Stockton Rush</option>
+                        </select>
+                    </div>
+                    
+                </form>
+
+                <div class="media">
+                    <div class="media-body pull-left">
+                        <p class="lead">Video output</p>
+                        <video id="video2" width="480" height="640" controls preload="none">
+                            <source src="/{{video}}" type="video/mp4">        
+                            Your browser does not support the video tag.
+                        </video>        
+                    </div>
+                </div>
+
+                <form id="output_form" name="output_form">
+                    <div class="form-group">
+                        <label for="text_area2" >Transcript</label>
+                        <textarea readonly class="form-control" id="text_area2" name="input_text2" placeholder="{{sample_text}}"
+                                  cols="40" rows="4">
+                        </textarea>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+        <hr class="my-4">
+
+        
+    </div>
+
+    <!--script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script-->
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            crossorigin="anonymous"></script>
+
+    <script type="text/javascript">
+
+        var speaker_name = document.getElementById("speaker");
+        speaker_name.onclick = select_changeListener;
+
+        function select_changeListener(){
+            var selected_speaker = speaker_name.options[speaker_name.selectedIndex].value;
+
+            var speaker_video = document.getElementById("speaker-video");
+            var form_group_video = document.getElementById("form-group-video");
+
+            if (selected_speaker == 'AlexWaibel') {
+                $("#speaker-video").empty();
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_1";
+                option.text = "Alex Waibel 1";
+                speaker_video.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_2";
+                option.text = "Alex Waibel 2";
+                speaker_video.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_3";
+                option.text = "Alex Waibel submarine video";
+                speaker_video.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_4";
+                option.text = "Alex Waibel New submarine video 1";
+                speaker_video.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_5";
+                option.text = "Alex Waibel New submarine video 2";
+                speaker_video.appendChild(option);
+
+                //form_group_video.style.visibility = "visible";
+
+            } else if (selected_speaker == 'Stockton') {
+                $("#speaker-video").empty();
+                var option = document.createElement("option");
+                option.value = "Stockton";
+                option.text = "Stockton Rush";
+                speaker_video.appendChild(option);
+                //form_group_video.style.visibility = "visible";
+                
+            } else {
+                $("#speaker-video").empty();
+                var option = document.createElement("option");
+                option.value = "Hanselka";
+                option.text = "President Hanselka";
+                speaker_video.appendChild(option);
+                //form_group_video.style.visibility = "visible";
+            }
+        };
+
+    </script>
+
+    <script type="text/javascript">
+
+        var selected_speaker_video= document.getElementById("speaker-video");
+        var speaker_name = document.getElementById("speaker");
+      
+        $("#speaker-video").click(function(){
+
+            var selected_speaker = speaker_name.options[speaker_name.selectedIndex].value;
+            var selected_video = selected_speaker_video.options[selected_speaker_video.selectedIndex].value;
+
+            //alert("selected video value:"+selected_video);
+            //alert("selected speaker value:"+selected_speaker);
+
+            var data = {speaker_id: selected_speaker, video_id: selected_video, video_location: "left"}
+
+            var req = new XMLHttpRequest();
+
+            req.onreadystatechange = function()
+            {
+              if(this.readyState == 4 && this.status == 200) {
+                  var data=req.responseText;
+                  var jsonResponse = JSON.parse(data);
+                  //alert(jsonResponse["msg"]+" "+jsonResponse["speaker_id"]+" "+jsonResponse["video_id"]+" "+jsonResponse["video_location"]);
+              }
+            }
+
+            req.open('POST', 'stream', true);
+            var msgjson = JSON.stringify(data);
+            req.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+            req.send(msgjson);
+
+            
+        });
+    </script>
+
+    <script type="text/javascript">
+
+        var speaker_name2 = document.getElementById("speaker2");
+        speaker_name2.onclick = select_changeListener2;
+
+       function select_changeListener2(){
+            var selected_speaker2 = speaker_name2.options[speaker_name2.selectedIndex].value;
+
+            var speaker_video2 = document.getElementById("speaker-video2");
+            var form_group_video2 = document.getElementById("form-group-video2");
+
+            if (selected_speaker2 == 'AlexWaibel') {
+                $("#speaker-video2").empty();
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_1";
+                option.text = "Alex Waibel 1";
+                speaker_video2.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_2";
+                option.text = "Alex Waibel 2";
+                speaker_video2.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_3";
+                option.text = "Alex Waibel 3";
+                speaker_video2.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_4";
+                option.text = "Alex Waibel New submarine video 1";
+                speaker_video2.appendChild(option);
+
+                var option = document.createElement("option");
+                option.value = "AlexWaibel_5";
+                option.text = "Alex Waibel New submarine video 2";
+                speaker_video2.appendChild(option);
+
+                //form_group_video2.style.visibility = "visible";
+
+            } else if (selected_speaker2 == 'Stockton') {
+                $("#speaker-video2").empty();
+                var option = document.createElement("option");
+                option.value = "Stockton";
+                option.text = "Stockton Rush";
+                speaker_video2.appendChild(option);
+                //form_group_video2.style.visibility = "visible";
+                
+            } else {
+                $("#speaker-video2").empty();
+                var option = document.createElement("option");
+                option.value = "Hanselka";
+                option.text = "President Hanselka";
+                speaker_video2.appendChild(option);
+                //form_group_video2.style.visibility = "visible";
+            }
+
+        };
+    </script>
+
+    <script type="text/javascript">
+
+        var selected_speaker_video2 = document.getElementById("speaker-video2");
+        var speaker_name2 = document.getElementById("speaker2");
+    
+        $("#speaker-video2").click(function(){
+
+            var selected_speaker2 = speaker_name2.options[speaker_name2.selectedIndex].value;
+            var selected_video2 = selected_speaker_video2.options[selected_speaker_video2.selectedIndex].value;
+
+            //alert("selected video2 value:"+selected_video2);
+            //alert("selected speaker2 value:"+selected_speaker2);
+
+            var data2 = {speaker_id: selected_speaker2, video_id: selected_video2, video_location: "right"}
+
+            var req2 = new XMLHttpRequest();
+
+            req2.onreadystatechange = function()
+            {
+              if(this.readyState == 4 && this.status == 200) {
+                  var data2=req2.responseText;
+                  var jsonResponse2 = JSON.parse(data2);
+                  //alert(jsonResponse2["msg"]+" "+jsonResponse2["speaker_id"]+" "+jsonResponse2["video_id"]+" "+jsonResponse2["video_location"]);
+              }
+            }
+
+            req2.open('POST', 'stream', true);
+            var msgjson2 = JSON.stringify(data2);
+            req2.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+            req2.send(msgjson2);
+
+
+        });
+    </script>
+
+    
+    <!--script>
+        var video = document.getElementById('video');
+        //var video2 = document.getElementById('video2');
+        
+        //var text1 = "Empty";
+        var flag = true;
+        var pause_flag = false;
+        
+        video.onplay= (event) => {
+            if (flag==false){
+                //alert("current source:"+text1)
+                if(pause_flag)
+                {
+                    fetch("/list_videos")
+                    .then(function (response) { return response.text();})
+                    .then(function (text) {
+                    if (text == "Empty"){
+                        alert("there is no video! pause flag true");
+                        video.pause();
+                        //flag=true;
+                    }
+                    else
+                    {   
+                        //alert("in pause begin");
+                        flag=false;
+                        alert(text);
+                        video.src=text;
+                        video.play();
+                        alert("in pause flag");               
+                        video.onended = (event) => {
+                        alert("hello end");
+                        flag=true;
+                        video.play(); };
+                    }});
+                    
+                }
+                else
+                {
+                    video.play();
+                }
+                
+            }
+            else{
+                fetch("/list_videos")
+                    .then(function (response) {
+                        return response.text();
+                        }).then(function (text) {
+                        if (text == "Empty"){
+                            alert("there is no video!");
+                            video.pause();
+                            pause_flag = true;
+                        }
+                        else
+                        {   
+                            alert(text);
+                            video.src=text;
+                            video.play();
+                            flag=false;
+
+                            video.onended = (event) => {
+                                flag=true;
+                                video.play();
+
+                            };
+                        }
+                    });
+        }
+    };
+
+    video.onpause=  (event) => {
+
+        if (pause_flag)
+        {
+            alert("in the end");
+            video.src="/{{video}}";
+        }    
+        else
+        {
+            alert("pause");
+        }
+
+    };
+    </script-->
+    
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function(){
+            var video = document.getElementById('video');
+            var video2 = document.getElementById('video2');
+            video.play();
+            video2.play();
+            //connect to the socket server.
+            //alert(document.domain + location.port + '/test')
+            var socket = io.connect('http://' + document.domain + ':' + location.port +  '/test');
+            var numbers_received = [];
+            //alert(socket);
+            //receive details from server
+            socket.on('video_file_sender', function(msg) {
+                //alert("Received filename:" + msg.video_file +":"+ msg.video_speaker);
+                //maintain a list of ten numbers          
+                numbers_received.push([msg.video_file, msg.video_speaker, msg.video_transcript]);
+                if(numbers_received.length!=0){
+                    //alert("video:"+numbers_received[numbers_received.length-1]);
+                    //$("#video").html('<source src="'+'http://127.0.0.1:5000/'+numbers_received[numbers_received.length-1]+" type='video/mp4'></source>" );
+                    //$('#video').attr('src', );
+
+                    if(numbers_received[numbers_received.length-1][1] == "0"){
+                        //video.src="http://127.0.0.1:5000/"+numbers_received[numbers_received.length-1];
+                        //alert(numbers_received[numbers_received.length-1][2]);
+                        document.getElementById("text_area").value=numbers_received[numbers_received.length-1][2];
+                        video.src=numbers_received[numbers_received.length-1][0];
+                        video.play();
+                        
+                    }
+                    else{
+                        //alert("video2");
+                        document.getElementById("text_area2").value=numbers_received[numbers_received.length-1][2];
+                        video2.src=numbers_received[numbers_received.length-1][0];
+                        video2.play();
+
+                    }
+                }
+            });
+        
+        });
+    </script>
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+            integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+
+</div>
+</body>
+
+</html>
