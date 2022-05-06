@@ -4,22 +4,22 @@ from string import punctuation
 import sys
 import uuid
 import base64
+from configs.tts_config import tts_config
 
 print(sys.path)
 import torch
 import yaml
 import numpy as np
-from torch.utils.data import DataLoader
+# from torch.utils.data import DataLoader
 from g2p_en import G2p
 from pypinyin import pinyin, Style
-import montreal_forced_aligner.g2p.generator as g2p_generator
 from scipy.io import wavfile
 
 from utils.model import get_model, get_vocoder
 from utils.tools import to_device, synth_samples
-from dataset import TextDataset
+# from dataset import TextDataset
 from text import text_to_sequence
-from sys import stdin, exit, stdout
+# from sys import stdin, exit, stdout
 import time
 
 
@@ -140,7 +140,8 @@ def preprocess_mandarin(text, preprocess_config):
 
     return np.array(sequence)
 
-def pitch_control_word_to_phoneme(pitch_control_word_level, text):
+
+def pitch_control_word_to_phoneme(pitch_control_word_level, text, preprocess_config):
     text = text.rstrip(punctuation)
     lexicon = read_lexicon(preprocess_config["path"]["lexicon_path"])
     pitch_control_phoneme_level = []
@@ -177,7 +178,7 @@ def pitch_control_word_to_phoneme(pitch_control_word_level, text):
     return pitch_control_phoneme_level
 
 
-def energy_control_word_to_phoneme(energy_control_word_level, text):
+def energy_control_word_to_phoneme(energy_control_word_level, text, preprocess_config):
     text = text.rstrip(punctuation)
     lexicon = read_lexicon(preprocess_config["path"]["lexicon_path"])
     energy_control_phoneme_level = []
@@ -214,7 +215,7 @@ def energy_control_word_to_phoneme(energy_control_word_level, text):
     return energy_control_phoneme_level
 
 
-def duration_control_word_to_phoneme(duration_control_word_level, text):
+def duration_control_word_to_phoneme(duration_control_word_level, text, preprocess_config):
     text = text.rstrip(punctuation)
     lexicon = read_lexicon(preprocess_config["path"]["lexicon_path"])
     duration_control_phoneme_level = []
@@ -250,6 +251,7 @@ def duration_control_word_to_phoneme(duration_control_word_level, text):
     if text[-1] == " ":
         duration_control_phoneme_level += [1.0]
     return duration_control_phoneme_level
+
 
 def synthesize(model, configs, vocoder, batchs, control_values, device):
     preprocess_config, model_config, train_config = configs
@@ -306,8 +308,11 @@ class TTS_worker:
         self.model_config = yaml.load(open(args.model_config, "r"), Loader=yaml.FullLoader)
         self.train_config = yaml.load(open(args.train_config, "r"), Loader=yaml.FullLoader)
         self.configs = (self.preprocess_config, self.model_config, self.train_config)
-        self.model = get_model(args, self.configs, self.device, train=False)
-        self.vocoder = get_vocoder(self.model_config, self.device)
+        self.sampling_rate = self.preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+
+        self.model = get_model(args, self.configs, self.device, train=False, fp16=args.fp16)
+        self.vocoder = get_vocoder(self.model_config, self.device, fp16=args.fp16)
+        #  print("half")
         self.legal_phones = ['b', 'E0', 'y0', 'a1', 'U0', '+', 'B1', 't', 'I0', 'i1', 'h', '/1', 'g', 'O1', 'd', 'q1',
                              'q0',
                              '&1', 'k', '|0', 'j', '=', 'B0', 'v', 'o1', 'a0', 'Y0', 'z', 'Y1', 'e1', '&0', 'E1', '~1',
@@ -325,7 +330,7 @@ class TTS_worker:
         if self.args.pitch_control_word_level != []:
             print(self.args.pitch_control_word_level[0])
             pitch_control_phoneme_level = pitch_control_word_to_phoneme(self.args.pitch_control_word_level[0],
-                                                                        self.args.text)
+                                                                        self.args.text, self.preprocess_config)
             pitch_control = pitch_control_phoneme_level
         else:
             pitch_control = self.args.pitch_control
@@ -353,5 +358,14 @@ class TTS_worker:
         wav = synthesize(self.model, self.configs, self.vocoder, batchs, control_values, self.device)
         return wav
 
+
+import time
+
 if __name__ == '__main__':
-    print(3333)
+    print("testing")
+    tts_worker = TTS_worker(tts_config)
+    wav = tts_worker.inference(input_txt="How are you today")
+    #
+    # wav = tts_worker.inference(input_txt="one two three four five six seven eight")
+    wavfile.write("audio/tts.wav", tts_worker.sampling_rate, wav)
+# torch.cuda.empty_cache()

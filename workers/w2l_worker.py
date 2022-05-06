@@ -1,15 +1,13 @@
-from os import listdir, path
 import numpy as np
-import scipy, cv2, os, sys, argparse, audio
+import cv2, os, audio
 import scipy.io.wavfile as swav
 import json, subprocess, random, string
 from tqdm import tqdm
 from glob import glob
 import torch, face_detection
 from models import Wav2Lip
-import platform
 import time
-import base64
+import soundfile as sf
 
 
 def get_smoothened_boxes(boxes, T):
@@ -22,7 +20,7 @@ def get_smoothened_boxes(boxes, T):
     return boxes
 
 
-def load_model(path, device):
+def load_model(path, device, fp16=False):
     model = Wav2Lip()
     print("Load checkpoint from: {}".format(path))
     checkpoint = torch.load(path)
@@ -31,8 +29,9 @@ def load_model(path, device):
     for k, v in s.items():
         new_s[k.replace('module.', '')] = v
     model.load_state_dict(new_s)
-
-    model = model.to(device)
+    if fp16:
+        model = model.half()
+    model.to(device)
     return model.eval()
 
 
@@ -46,7 +45,6 @@ def load_model(path, device):
 
 def datagen(frames, mels, face_det_results, args, facebox_object=None):
     img_batch, mel_batch, frame_batch, coords_batch = [], [], [], []
-
     start_idx_faces = facebox_object.end_frame_previous
 
     if facebox_object.start_directly_from_reverse:
@@ -103,12 +101,13 @@ class Face:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.name = name
         self.face_path = face_path
-        self.initialize()
         self.end_frame_previous = 0
         self.start_directly_from_reverse = False
         self.args = args
-        self.detector = face_detection.FaceAlignment(face_detection.LandmarksType._2D,
-                                                     flip_input=False, device=self.device)
+        # self.detector = face_detection.FaceAlignment(face_detection.LandmarksType._2D,
+        #                                             flip_input=False, device="cpu")
+        self.detectir = None  # save memory
+        self.initialize()
 
     def initialize(self):
         if not os.path.isfile(self.face_path):
@@ -241,18 +240,19 @@ class Face:
         return results
 
 
-class VC_worker:
+class W2L_worker:
     def __init__(self, args):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.args = args
-        w2l_model = load_model(args.checkpoint_path)
+        self.w2l_model = load_model(args.checkpoint_path, self.device, fp16=args.fp16)
         list_facepath = args.face.split("|")
         self.list_name = args.name.split("|")
         self.list_facebox = []
         for name, facepath in zip(self.list_name, list_facepath):
-            facebox = Face(name, facepath)
+            facebox = Face(name, facepath, args)
             facebox.detect_face()
             self.list_facebox.append(facebox)
+        print(len(self.list_facebox))
         self.mel_step_size = 16
 
     def inference(self, speaker, wav):
@@ -261,6 +261,7 @@ class VC_worker:
         else:
             print("Can not find name")
             facebox = self.list_facebox[0]
+        print(facebox)
         start_of_the_lip_part = time.time()
         face_det_results = facebox.face_det_results
         fps = facebox.fps
@@ -294,7 +295,7 @@ class VC_worker:
 
         total_iter = int(np.ceil(float(len(mel_chunks)) / batch_size))
 
-        gen = datagen(full_frames_in.copy(), mel_chunks, face_det_results_in, facebox)
+        gen = datagen(full_frames_in.copy(), mel_chunks, face_det_results_in, self.args, facebox)
         for i, (img_batch, mel_batch, frames, coords) in enumerate(tqdm(gen,
                                                                         total=int(
                                                                             np.ceil(
@@ -314,8 +315,12 @@ class VC_worker:
                 facebox.end_frame_previous = int(total_iter * batch_size) + facebox.end_frame_previous
 
             # print("img batch: {}, mel batch: {}".format(img_batch.shape, mel_batch.shape))
-            img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(self.device)
-            mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(self.device)
+            if self.args.fp16:
+                img_batch = torch.HalfTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(self.device)
+                mel_batch = torch.HalfTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(self.device)
+            else:
+                img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(self.device)
+                mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(self.device)
 
             with torch.no_grad():
                 start_time = time.time()
@@ -356,3 +361,13 @@ class VC_worker:
         print("Total full part of the lip generation: {}".format(print_time))
         #  return_text = "RES: " + write_name_video_file.split(".avi")[0] + ".mp4\n"
         return mp4_file
+
+
+from configs.w2l_config import w2l_config
+
+if __name__ == '__main__':
+    print("testing")
+
+    model = W2L_worker(w2l_config)
+    wav, fs = sf.read("/home/titanic/PycharmProjects/Titanic_project/audio/converted_wav")
+    model.inference("Hanselka", wav)
